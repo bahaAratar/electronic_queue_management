@@ -1,8 +1,9 @@
-from rest_framework import generics
+from rest_framework import generics, viewsets
 from rest_framework.response import Response
 from .models import Queue, Window
 from .serializers import QueueSerializer, WindowSerializer
 from ticket.models import Ticket
+from datetime import datetime, timedelta, time
 
 class QueueListCreateAPIView(generics.ListCreateAPIView):
     queryset = Queue.objects.order_by('created_at').filter(is_served=True)
@@ -71,3 +72,48 @@ class WindowRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
 #             return Response("Указанный клиент не найден в очереди", status=404)
 
 #endregion
+
+class PrintTicket(viewsets.ViewSet):
+    def get_ticket(self, request, pk=None): # Начало и конец рабочего дня
+        science_time = datetime.now().time()
+        start_time = time(9, 0)
+        end_time = time(17, 59)
+
+        if not (start_time <= science_time <= end_time):
+            return Response({'error': 'Печать талонов недоступна в данный момент'}, status=403)
+
+        try:
+            customer = Queue.objects.get(ticket_number=pk)  # номер талона
+        except Queue.DoesNotExist:
+            return Response({'error': 'Талон с указанным номером не найден'},
+                            status=404)
+
+        def get_timeout(queue, customer):
+            customers = Queue.objects.filter(queue=queue, is_served=False,
+                                                      ticket_number__lt=customer.ticket_number)
+            average_waiting_time = queue.average_waiting_time or 0  # время ожидания
+
+            total_waiting_time = customers.count() * average_waiting_time  # время ожидания для всех талонов
+            estimated_wait_time = datetime.now() + timedelta(
+                minutes=total_waiting_time)  # времени ожидания для указанного талона
+            time_remaining = estimated_wait_time - datetime.now()  # Вычисление оставшегося времени ожидания
+
+            minutes = time_remaining.seconds // 60
+            seconds = time_remaining.seconds % 60
+
+            time_remaining_str = f"{minutes} минут, {seconds} секунд"
+
+            return time_remaining_str
+
+        ticket_data = {
+            'Номер талона': customer.ticket_number,
+            'Выдано': customer.created_at,
+            'Имя посетителя': customer.user.username,
+            'Наименование организации': 'RSK',
+            'Очередь': customer.queue.name,
+            'Номер окна': customer.queue.window_number,
+            'Количество посетителей в очереди': Queue.objects.filter(queue=customer.queue, is_served=False,
+                                                                        number__lt=customer.ticket_number).count(),
+            'Примерное время ожидания': get_timeout(customer.queue, customer),
+        }
+        return Response(ticket_data)
