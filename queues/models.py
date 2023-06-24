@@ -1,20 +1,20 @@
 from django.db import models
+from ticket.models import Ticket
 from account.models import CustomUser
 
 class Window(models.Model):
-    number = models.CharField(max_length=50)
-    operator = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    operator = models.ForeignKey(CustomUser, on_delete=models.CASCADE, null=True, blank=True)
+    ticket = models.OneToOneField(Ticket, on_delete=models.SET_NULL, null=True, blank=True)
     is_available = models.BooleanField(default=True)
-    current_ticket = models.OneToOneField('ticket.Ticket', on_delete=models.SET_NULL, null=True, blank=True)
+    is_works = models.BooleanField(default=False)
 
     def __str__(self):
-        return f'{self.operator} - {self.current_ticket}'
+        return f"№{self.id}, cвободен? {self.is_available}, работает? {self.is_works}"
+
 
 class Queue(models.Model):
-    operator = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
-    ticket = models.ForeignKey('ticket.Ticket', on_delete=models.CASCADE)
+    ticket = models.ForeignKey(Ticket, on_delete=models.CASCADE)
     is_served = models.BooleanField(default=False)
-    created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"Очередь: {self.id}, Билет: {self.ticket.number}, Оператор: {self.operator.username}"
+        return f"№{self.id}, билет: {self.ticket.number}, is_sedved = {self.is_served}"

@@ -35,11 +35,6 @@ class RegionSerializer(serializers.ModelSerializer):
 
 class TicketSerializer(serializers.ModelSerializer):
     owner = serializers.SlugRelatedField(slug_field='email', read_only=True)
-    
-    region = serializers.SlugRelatedField(slug_field='title', queryset=Region.objects.all())
-    area = serializers.SlugRelatedField(slug_field='title', queryset=Area.objects.all())
-    city = serializers.SlugRelatedField(slug_field='title', queryset=City.objects.all())
-    department = serializers.SlugRelatedField(slug_field='title', queryset=Department.objects.all())
 
     class Meta:
         model = Ticket

@@ -2,6 +2,7 @@ import random
 import string
 from django.db import models
 from account.models import CustomUser
+from django.utils import timezone
 
 
 class Region(models.Model):
@@ -49,8 +50,9 @@ class Ticket(models.Model):
     time = models.TimeField()
 
     status = models.CharField(choices=status_list, default='not_active', max_length=50, blank=True)
-    activation_code = models.CharField(max_length=7, unique=True, blank=True)
+    
     number = models.CharField(max_length=6, unique=True, blank=True)
+    activation_code = models.CharField(max_length=7, unique=True, blank=True)
 
     def save(self, *args, **kwargs):
         if not self.activation_code:
@@ -70,8 +72,8 @@ class Ticket(models.Model):
                 last_number = -1
             new_number = f'{transaction_code}{str(last_number + 1).zfill(3)}'
             self.number = new_number
-        
+
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"Билет: {self.number}, Владелец: {self.owner.email}, Операция: {self.transaction}"
+        return f"id: {self.id}, Билет: {self.number}, Владелец: {self.owner}, Операция: {self.transaction}, status {self.status}"
