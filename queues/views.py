@@ -44,8 +44,6 @@ class WindowRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
             next_queue.is_served = True
             next_queue.save()
 
-            print('-------------------\n', instance.ticket, '\n-----------------------')
-
             return Response(f'Билет {instance.ticket.number} успешно привязан к окну {instance.id}', status=200)
 
         # Получение следующего билета из очереди и привязка его к окну
@@ -57,7 +55,7 @@ class WindowRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
             instance.save()
 
             # Обновление статуса билета из очереди
-            next_queue.ticket.status = 'no_active'
+            next_queue.ticket.status = 'not_active'
             next_queue.ticket.save()
             next_queue.is_served = True
             next_queue.save()
@@ -80,21 +78,21 @@ class WindowToggleAPIView(generics.UpdateAPIView):
 
     def update(self, request, *args, **kwargs):
         instance = self.get_object()
+        
+        queue = Queue.objects.filter(ticket__status='active').order_by('id').first()
+        if queue == None:
+            return Response('В очереди нет билетов со статусом "active".', status=400)
 
         # Включение окна
-        if not instance.is_works:
-            try:
-                queue = Queue.objects.filter(ticket__status='active').order_by('id').first()
-            except ObjectDoesNotExist:
-                return Response('В очереди нет билетов со статусом "active".', status=400)
+        if instance.is_works == False:
             instance.is_works = True
             instance.operator = request.user
             instance.ticket = queue.ticket
             instance.save()
 
             # Обновление статуса билета из очереди
-            queue.ticket.status = 'no_active'
-            queue.ticket.save()
+            queue.ticket.status = 'not_active'
+            # queue.ticket.save()
             queue.is_served = True
             queue.save()
 
