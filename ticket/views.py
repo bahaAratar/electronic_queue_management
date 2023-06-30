@@ -3,6 +3,7 @@ from rest_framework.views import APIView
 from rest_framework import generics, mixins
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
+from django.utils import timezone
 from .models import Ticket, City, Department, Area, Region
 from .serializers import TicketSerializer, CitySerializer, DepartmentSerializer, AreaSerializer, RegionSerializer, ActivateTicketSerializer
 from queues.models import Queue, Window 
@@ -40,7 +41,7 @@ class TicketActivationAPIView(APIView):
                         queue.delete()
                 else:
                     ticket.status = 'active'
-                    Queue.objects.create(ticket=ticket)
+                    Queue.objects.create(ticket=ticket, creation_date=timezone.now())
                 ticket.save()
                 serializer = self.serializer_class(ticket)
                 return Response(serializer.data)
@@ -48,26 +49,6 @@ class TicketActivationAPIView(APIView):
                 return Response({'error': 'Билет не найден'}, status=400)
         else:
             return Response({'error': 'Отсутствует активационный код'}, status=400)
-        
-        #only activate
-    #     if activation_code is not None:
-    #         try:
-    #             ticket = Ticket.objects.get(activation_code=activation_code)
-    #             if ticket.status == 'active':
-    #                 return Response({'error': 'Билет уже активирован'}, status=400)
-    #             ticket.status = 'active'
-    #             ticket.save()
-    #             Queue.objects.filter(ticket=ticket, ticket__status='not_active').delete()
-    #             queue_entry = Queue.objects.filter(ticket=ticket).first()
-    #             if not queue_entry:
-    #                 Queue.objects.create(ticket=ticket)
-    #             serializer = self.serializer_class(ticket)
-    #             return Response(serializer.data)
-    #         except Ticket.DoesNotExist:
-    #             return Response({'error': 'Билет не найден'}, status=400)
-    #     else:
-    #         return Response({'error': 'Отсутствует активационный код'}, status=400)
-        
 
         
 class RegionListCreateAPIView(generics.ListCreateAPIView):

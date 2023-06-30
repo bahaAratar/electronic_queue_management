@@ -16,5 +16,11 @@ class Queue(models.Model):
     ticket = models.ForeignKey(Ticket, on_delete=models.CASCADE)
     is_served = models.BooleanField(default=False)
 
+    window = models.ForeignKey(Window, on_delete=models.CASCADE, null=True, blank=True)
+
+    creation_date = models.DateTimeField(blank=True)
+    service_start = models.DateTimeField(blank=True)
+    service_end = models.DateTimeField(blank=True)
+
     def __str__(self):
         return f"№{self.id}, билет: {self.ticket.number}, is_sedved = {self.is_served}"

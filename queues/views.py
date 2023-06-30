@@ -1,6 +1,7 @@
 from rest_framework.response import Response
 from rest_framework import generics
 from rest_framework.permissions import IsAdminUser
+from django.utils import timezone
 from .models import Queue, Window
 from .serializers import QueueSerializer, WindowSerializer
 from django.core.exceptions import ObjectDoesNotExist
@@ -28,7 +29,7 @@ class WindowRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
         instance = self.get_object()
         
         try:
-            next_queue = Queue.objects.filter(ticket__status='active').order_by('id').first()
+            next_queue = Queue.objects.filter(ticket__status='active').order_by('id').first() # для брони просто order_by пот времени сделать
         except ObjectDoesNotExist:
             next_queue = None
 
@@ -41,7 +42,9 @@ class WindowRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
             # Обновление статуса билета из очереди
             next_queue.ticket.status = 'no_active'
             next_queue.ticket.save()
+            next_queue.window = instance
             next_queue.is_served = True
+            next_queue.service_start = timezone.now()
             next_queue.save()
 
             return Response(f'Билет {instance.ticket.number} успешно привязан к окну {instance.id}', status=200)
@@ -57,7 +60,9 @@ class WindowRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
             # Обновление статуса билета из очереди
             next_queue.ticket.status = 'not_active'
             next_queue.ticket.save()
+            next_queue.window = instance
             next_queue.is_served = True
+            next_queue.service_end = timezone.now()
             next_queue.save()
             
             # Привязка следующего билета из очереди к окну\
@@ -65,7 +70,8 @@ class WindowRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
             instance.ticket = next_queue.ticket
             instance.save()
 
-            print('-------------------\n', instance.ticket, '\n-----------------------')
+            next_queue.service_start= timezone.now()
+            next_queue.save()
 
             return Response(f'Билет {old_ticket.number} успешно удален из окна и привязан следующий билет {instance.ticket.number} из очереди.', status=200)
         else:
@@ -92,7 +98,10 @@ class WindowToggleAPIView(generics.UpdateAPIView):
 
             # Обновление статуса билета из очереди
             queue.ticket.status = 'not_active'
-            # queue.ticket.save()
+            queue.ticket.save()
+            queue.window = instance.id
+            queue.service_start = timezone.now()
+
             queue.is_served = True
             queue.save()
 
@@ -105,6 +114,9 @@ class WindowToggleAPIView(generics.UpdateAPIView):
             instance.is_available = True
             instance.ticket = None
             instance.save()
+
+            queue.service_end = timezone.now()
+            queue.save()
 
             return Response('Окно успешно выключено.', status=200)
 
