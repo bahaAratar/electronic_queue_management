@@ -5,6 +5,8 @@ from .serializers import QueueSerializer, WindowSerializer
 from ticket.models import Ticket
 from datetime import datetime, timedelta, time
 
+import tkinter as tk
+
 class QueueListCreateAPIView(generics.ListCreateAPIView):
     queryset = Queue.objects.order_by('created_at').filter(is_served=True)
     serializer_class = QueueSerializer
@@ -117,3 +119,21 @@ class PrintTicket(viewsets.ViewSet):
             'Примерное время ожидания': get_timeout(customer.queue, customer),
         }
         return Response(ticket_data)
+
+
+# #модуль центрального табло
+#
+# #Создания главного окна
+# root = tk.Tk()
+# root.title('Центральное табло и аудио оповещение')
+#
+# #Обновление информации на табло
+# def update_display():
+#     display.delete('1.0', tk.END)
+#     #номер талонов
+#     display.insert(tk.END, 'Номер талона: ')
+#     display.insert(tk.END, 'Окно оператора: ')
+#
+#     #отображение блоков информации
+#     display.insert(tk.END, 'Логотип компании')
+

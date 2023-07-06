@@ -50,6 +50,7 @@ INSTALLED_APPS = [
 
     # apps
     'account',
+    'parser',
     'ticket',
     'queues',
 ]
@@ -94,11 +95,11 @@ WSGI_APPLICATION = 'main.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': config('DB_NAME'),
-        'USER': config('DB_USER'),
-        'PASSWORD': config('DB_PASSWORD'),
+        'NAME': 'rsk_bank',
+        'USER': 'aliya',
+        'PASSWORD': '12345',
         'HOST': 'localhost',
-        'PORT': 5432
+        'PORT': '5433',
     }
 }
 
@@ -166,8 +167,10 @@ EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')
-EMAIL_HOST_USER = config('EMAIL_HOST_USER')
+# EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')
+# EMAIL_HOST_USER = config('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = '12345'
+EMAIL_HOST_USER = 'rsk'
 
 
 SIMPLE_JWT = {

@@ -18,3 +18,11 @@ class Queue(models.Model):
 
     def __str__(self):
         return f"Очередь: {self.id}, Билет: {self.ticket.number}, Оператор: {self.operator.username}"
+
+# class Branches(models.Model):
+#     name = models.CharField(max_length=100)
+#     address = models.CharField(max_length=100)
+#     phone = models.CharField(max_length=100)
+#
+#     def __str__(self):
+#         return {self.name}
