@@ -1,11 +1,12 @@
 from rest_framework import serializers
-from .models import Queue, Window
-# from ticket.serializers import TicketSerializer
+from .models import Queue, Window, Operathor
+from account.serializers import ProfileSerializer
+from ticket.serializers import TicketSerializer
 
 
 class WindowSerializer(serializers.ModelSerializer):
-    operator = serializers.StringRelatedField(read_only=True)
-    ticket = serializers.StringRelatedField(read_only=True)
+    # operator = ProfileSerializer()
+    # ticket = TicketSerializer()
 
     class Meta:
         model = Window
@@ -16,4 +17,12 @@ class QueueSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Queue
+        fields = '__all__'
+
+class OperathorSerializer(serializers.ModelSerializer):
+    window = WindowSerializer()
+    client = QueueSerializer(many=True)
+
+    class Meta:
+        model = Operathor
         fields = '__all__'

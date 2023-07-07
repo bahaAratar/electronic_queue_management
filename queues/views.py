@@ -2,8 +2,8 @@ from rest_framework.response import Response
 from rest_framework import generics
 from rest_framework.permissions import IsAdminUser
 from django.utils import timezone
-from .models import Queue, Window
-from .serializers import QueueSerializer, WindowSerializer
+from .models import Queue, Window, Operathor
+from .serializers import QueueSerializer, WindowSerializer, OperathorSerializer
 from django.core.exceptions import ObjectDoesNotExist
 
 class QueueListCreateAPIView(generics.ListCreateAPIView):
@@ -27,11 +27,16 @@ class WindowRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
 
     def update(self, request, *args, **kwargs):
         instance = self.get_object()
+
+        if not instance.is_works:
+            return Response('окно выключено', status=400)
         
         try:
             next_queue = Queue.objects.filter(ticket__status='active').order_by('id').first() # для брони просто order_by пот времени сделать
         except ObjectDoesNotExist:
             next_queue = None
+        
+        operathor = Operathor.objects.filter(operathor=request.user).latest('id')
 
         # Проверка, что окно включено и имеет билет
         if instance.ticket == None:
@@ -64,7 +69,7 @@ class WindowRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
             next_queue.is_served = True
             next_queue.service_end = timezone.now()
             next_queue.save()
-            
+
             # Привязка следующего билета из очереди к окну\
             instance.is_available = False
             instance.ticket = next_queue.ticket
@@ -72,6 +77,10 @@ class WindowRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
 
             next_queue.service_start= timezone.now()
             next_queue.save()
+            
+            # Оператор
+            operathor.client.add(next_queue)
+            operathor.save()
 
             return Response(f'Билет {old_ticket.number} успешно удален из окна и привязан следующий билет {instance.ticket.number} из очереди.', status=200)
         else:
@@ -86,26 +95,6 @@ class WindowToggleAPIView(generics.UpdateAPIView):
         instance = self.get_object()
         
         queue = Queue.objects.filter(ticket__status='active').order_by('id').first()
-        if queue == None:
-            return Response('В очереди нет билетов со статусом "active".', status=400)
-
-        # Включение окна
-        if instance.is_works == False:
-            instance.is_works = True
-            instance.operator = request.user
-            instance.ticket = queue.ticket
-            instance.save()
-
-            # Обновление статуса билета из очереди
-            queue.ticket.status = 'not_active'
-            queue.ticket.save()
-            queue.window = instance.id
-            queue.service_start = timezone.now()
-
-            queue.is_served = True
-            queue.save()
-
-            return Response('Окно успешно включено.', status=200)
 
         # Выключение окна
         if instance.is_works:
@@ -115,9 +104,52 @@ class WindowToggleAPIView(generics.UpdateAPIView):
             instance.ticket = None
             instance.save()
 
-            queue.service_end = timezone.now()
-            queue.save()
+            if queue:
+                queue.service_end = timezone.now()
+                queue.save()
+            
+            operathor = Operathor.objects.filter(window=instance).first()
+            if operathor:
+                operathor.word_end = timezone.now()
+                operathor.save()
 
             return Response('Окно успешно выключено.', status=200)
+        
+        if queue == None:
+            return Response('В очереди нет билетов со статусом "active".', status=400)
+            
+        # Включение окна
+        if instance.is_works == False:
+            
+            instance.is_available = False
+            instance.is_works = True
+            instance.operator = request.user
+            instance.ticket = queue.ticket
+            instance.save()
+
+            # Обновление статуса билета из очереди
+            queue.ticket.status = 'not_active'
+            queue.ticket.save()
+            queue.window = instance
+            queue.service_start = timezone.now()
+            queue.is_served = True
+            queue.save()
+
+            # Добавление информации об операторе 
+            operathor = Operathor.objects.create(
+                operathor=request.user,
+                window=instance,
+                word_start=timezone.now(),
+                word_end = None
+            )
+            operathor.client.add(queue)
+            operathor.save()
+
+            return Response('Окно успешно включено.', status=200)
 
         return Response('Некорректный запрос.', status=400)
+    
+class OperathorListCreateAPIView(generics.ListCreateAPIView):
+    queryset = Operathor.objects.all()
+    serializer_class = OperathorSerializer
+    permission_classes = [IsAdminUser]
