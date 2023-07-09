@@ -6,6 +6,7 @@ app_name = 'ticket'
 urlpatterns = [
     path('', TicketListCreateAPIView.as_view(), name='ticket-list-create'),
     path('<int:pk>/', TicketRetrieveUpdateDestroyAPIView.as_view(), name='ticket-retrieve-update-destroy'),
+    path('me/', TicketListAPIView.as_view()),
     
     path('regions/', RegionListCreateAPIView.as_view(), name='region-list-create'),
     path('regions/<int:pk>/', RegionRetrieveUpdateDestroyAPIView.as_view(), name='region-retrieve-update-destroy'),

@@ -4,6 +4,7 @@ from rest_framework import generics, mixins
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from django.utils import timezone
+from .permissions import IsOwner
 from .models import Ticket, City, Department, Area, Region
 from .serializers import TicketSerializer, CitySerializer, DepartmentSerializer, AreaSerializer, RegionSerializer, ActivateTicketSerializer
 from queues.models import Queue, Window 
@@ -15,6 +16,15 @@ class TicketListCreateAPIView(generics.ListCreateAPIView):
 
     def perform_create(self, serializer):
         serializer.save(owner=self.request.user)
+
+class TicketListAPIView(generics.ListAPIView):
+    queryset = Ticket.objects.all()
+    serializer_class = TicketSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        return Ticket.objects.filter(owner=user)
 
 class TicketRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Ticket.objects.all()
