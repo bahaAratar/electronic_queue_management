@@ -13,13 +13,14 @@ class WindowSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class QueueSerializer(serializers.ModelSerializer):
-    ticket = serializers.StringRelatedField()
+    ticket = TicketSerializer()
 
     class Meta:
         model = Queue
         fields = '__all__'
 
 class OperathorSerializer(serializers.ModelSerializer):
+    operathor = ProfileSerializer()
     window = WindowSerializer()
     client = QueueSerializer(many=True)
 

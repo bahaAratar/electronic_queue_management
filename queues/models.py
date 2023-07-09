@@ -32,3 +32,6 @@ class Operathor(models.Model):
     
     word_start = models.DateTimeField(null=True, blank=True)
     word_end = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self) -> str:
+        return f'{self.operathor.phone_number}, Window: {self.window.id}, word start: {self.word_start}, word_end: {self.word_end}'
